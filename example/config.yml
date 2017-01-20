@@ -1,0 +1,15 @@
+warner:
+  host: "127.0.0.1"
+  port: 8086
+  measurement:
+    login:
+      -
+        day: "0-7"
+        time: "00:00-23:59"
+        text: The count of successful login is abnormal
+        where:
+          - result = success
+        start: "-5m"
+        func:
+          - count(account)
+        check: count > 100
