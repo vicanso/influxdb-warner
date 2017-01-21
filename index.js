@@ -23,7 +23,7 @@ function getUrl(opt) {
  */
 function isValidDay(desc) {
   const dayList = _.isArray(desc) ? desc : [desc];
-  const currentDay = new Date().getDay();
+  const currentDay = new Date().getDay() + 1;
   const result = _.map(dayList, (item) => {
     const arr = item.split('-');
     if (currentDay < arr[0]) {
@@ -109,7 +109,7 @@ class Warner extends EventEmitter {
   }
   check(client, setting) {
     _.forEach(setting, (opts, measurement) => {
-      _.forEach(opts, (option, name) => {
+      _.forEach(opts, (option) => {
         if (option.time && !isValidTime(option.time)) {
           return;
         }
@@ -133,7 +133,6 @@ class Warner extends EventEmitter {
             if (!context.valid) {
               this.emit('warn', {
                 measurement,
-                name,
                 text: option.text,
                 value: item[key],
               });

@@ -8,8 +8,6 @@ const config = require('fs')
   .readFileSync(configFile, 'utf8');
 const yaml = require('yaml');
 
-console.dir(JSON.stringify(yaml.eval(config)));
-
 function randomChar(length = 8) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('');
   const charsCount = chars.length;
@@ -59,9 +57,24 @@ describe('influxdb-warner', () => {
   });
 
   it('check', (done) => {
+    let count = 0;
     warner.on('warn', (data) => {
-      console.dir(data);
+      assert.equal(data.measurement, 'login');
+      assert(data.value);
+      assert(_.indexOf([
+        'The count of successful login is abnormal',
+        'The count of failed login is abnormal',
+      ], data.text) !== -1);
+      count++;
+      if (count === 2) {
+        done();
+      }
     });
-    warner.start(10 * 1000);
+    const delay = (ms) => {
+      return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+      });
+    };
+    warner.start(10 * 1000, delay(10));
   });
 });

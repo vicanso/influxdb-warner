@@ -4,8 +4,8 @@ warner:
   measurement:
     login:
       -
-        day: "0-7"
-        time: "00:00-23:59"
+        day: "1-7"
+        time: "00:00-24:00"
         text: The count of successful login is abnormal
         where:
           - result = success
@@ -13,3 +13,13 @@ warner:
         func:
           - count(account)
         check: count > 100
+      -
+        day: ["1", "2", "3", "4", "5", "6", "7"]
+        time: ["00:00-12:00", "12:00-24:00"]
+        text: The count of failed login is abnormal
+        where:
+          - result = fail
+        func:
+          - count(account)
+        check: count < 10
+        
