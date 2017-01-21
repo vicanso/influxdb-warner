@@ -62,11 +62,17 @@ describe('influxdb-warner', () => {
       assert.equal(data.measurement, 'login');
       assert(data.value);
       assert(_.indexOf([
+        'select count("account") from "login" where "result" = \'success\' and time >= now() - 5m',
+        'select count("account") from "login" where "result" = \'fail\'',
+        'select count("account") from "login" where "result" = \'fail\' group by "type"',
+      ], data.ql) !== -1);
+      assert(_.indexOf([
         'The count of successful login is abnormal',
         'The count of failed login is abnormal',
+        'The count of failed login(group by account\'s type) is abnormal',
       ], data.text) !== -1);
       count++;
-      if (count === 2) {
+      if (count >= 4) {
         done();
       }
     });

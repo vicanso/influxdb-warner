@@ -122,6 +122,7 @@ class Warner extends EventEmitter {
         addGroup(reader, option.group);
         addWhere(reader, option.where);
         reader.set('format', 'json');
+        const ql = reader.toSelect();
         reader.then((data) => {
           _.forEach(data[measurement], (item) => {
             const context = _.extend({
@@ -133,6 +134,7 @@ class Warner extends EventEmitter {
             if (!context.valid) {
               this.emit('warn', {
                 measurement,
+                ql,
                 text: option.text,
                 value: item[key],
               });

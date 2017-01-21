@@ -22,4 +22,11 @@ warner:
         func:
           - count(account)
         check: count < 10
-        
+      -
+        text: The count of failed login(group by account's type) is abnormal
+        group: type
+        where:
+          - result = fail
+        func:
+          - count(account)
+        check: count < 1 

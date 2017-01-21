@@ -1,3 +1,3 @@
 # influxdb-warner
 
-Create warn event from influxdb.
+我使用`influxdb`来做系统的性能统计与监控，但是在工作中，没办法一直关注着统计的图表，因此编写了`influxdb-warner`，通过简单的配置，读取最近的`influxdb`数据，如果超过了设定阀值，则触发一个`warn` event，在该事件中可以发送邮件，播放特定声音等等，而在收到相应预警之后，我再去关注统计图表查找问题，这样就可以不影响正常工作而在系统出错时又能及时获知。
