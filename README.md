@@ -1,5 +1,10 @@
 # influxdb-warner
 
+[![Build Status](https://travis-ci.org/vicanso/influxdb-nodejs.svg?branch=master)](https://travis-ci.org/vicanso/influxdb-warner)
+[![Coverage Status](https://img.shields.io/coveralls/vicanso/influxdb-warner/master.svg?style=flat)](https://coveralls.io/r/vicanso/influxdb-warner?branch=master)
+[![npm](http://img.shields.io/npm/v/influxdb-warner.svg?style=flat-square)](https://www.npmjs.org/package/influxdb-warner)
+[![Github Releases](https://img.shields.io/npm/dm/influxdb-warner.svg?style=flat-square)](https://github.com/vicanso/influxdb-warner)
+
 I used `influxdb` to record system performance statistics and monitoring, but at work I was not able to keep a close eye on statistical graphs, so I wrote `influxdb-warner` to read the most recent `influxdb` data using a simple configuration. When the check function is fail, then trigger a warn event. In the event I can send e-mail(I use this way), play a specific sound, etc., so I can handle the exception asap.
 
 ### Installation
