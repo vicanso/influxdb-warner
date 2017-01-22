@@ -1,6 +1,12 @@
 # influxdb-warner
 
-我使用`influxdb`来做系统的性能统计与监控，但是在工作中，没办法一直关注着统计的图表，因此编写了`influxdb-warner`，通过简单的配置，读取最近的`influxdb`数据，如果超过了设定阀值，则触发一个`warn` event，在该事件中可以发送邮件，播放特定声音等等，而在收到相应预警之后，我再去关注统计图表查找问题，这样就可以不影响正常工作而在系统出错时又能及时获知。
+I used `influxdb` to record system performance statistics and monitoring, but at work I was not able to keep a close eye on statistical graphs, so I wrote `influxdb-warner` to read the most recent `influxdb` data using a simple configuration. When the check function is fail, then trigger a warn event. In the event I can send e-mail(I use this way), play a specific sound, etc., so I can handle the exception asap.
+
+### Installation
+
+```bash
+npm install influxdb-warner
+```
 
 ### API
 
