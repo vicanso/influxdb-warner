@@ -61,21 +61,23 @@ describe('influxdb-warner', () => {
     warner.on('warn', (data) => {
       assert.equal(data.measurement, 'login');
       assert(data.value);
-      assert(_.indexOf([
+      const qlIndex = _.indexOf([
         'select count("account") from "login" where "result" = \'success\' and time >= now() - 5m',
         'select count("account") from "login" where "result" = \'fail\'',
         'select count("account") from "login" where "result" = \'fail\' group by "type"',
-      ], data.ql) !== -1);
-      assert(_.indexOf([
+      ], data.ql);
+      assert(qlIndex !== -1);
+      const textIndex = _.indexOf([
         'The count of successful login is abnormal',
         'The count of failed login is abnormal',
         'The count of failed login(group by account\'s type) is abnormal',
-      ], data.text) !== -1);
+      ], data.text);
+      assert(textIndex !== -1);
       count++;
       if (count >= 4) {
         done();
       }
-    });
+    }).on('error', done);
     const delay = (ms) => {
       return new Promise((resolve) => {
         setTimeout(resolve, ms);

@@ -4,6 +4,8 @@ const EventEmitter = require('events');
 const _ = require('lodash');
 const Influx = require('influxdb-nodejs');
 const vm = require('vm');
+const pkg = require('./package');
+const debug = require('debug')(pkg.name);
 
 /**
  * getUrl - Get the influxdb connect url
@@ -13,7 +15,12 @@ const vm = require('vm');
 function getUrl(opt) {
   const protocol = opt.protocol || 'http';
   const port = opt.port || 8086;
-  return `${protocol}://${opt.host}:${port}/${opt.database}`;
+  let auth = '';
+  /* istanbul ignore if */
+  if (opt.user && opt.pass) {
+    auth = `${opt.user}:${opt.pass}@`;
+  }
+  return `${protocol}://${auth}${opt.host}:${port}/${opt.database}`;
 }
 
 /**
@@ -29,6 +36,7 @@ function isValidDay(desc) {
     if (currentDay < arr[0]) {
       return false;
     }
+    /* istanbul ignore if */
     if (arr[1] && currentDay > arr[1]) {
       return false;
     }
@@ -47,9 +55,11 @@ function isValidTime(desc) {
   const result = _.map(timeList, (item) => {
     const arr = item.split('-');
     const time = moment().format('HH:mm');
+    /* istanbul ignore if */
     if (time < arr[0]) {
       return false;
     }
+    /* istanbul ignore if */
     if (arr[1] && time > arr[1]) {
       return false;
     }
@@ -64,6 +74,7 @@ function isValidTime(desc) {
  * @param {[type]} func   [description]
  */
 function addFunction(reader, func) {
+  /* istanbul ignore if */
   if (!func) {
     return;
   }
@@ -82,6 +93,7 @@ function addFunction(reader, func) {
  * @param {[type]} group  [description]
  */
 function addGroup(reader, group) {
+  /* istanbul ignore if */
   if (!group) {
     return;
   }
@@ -90,6 +102,7 @@ function addGroup(reader, group) {
 }
 
 function addWhere(reader, where) {
+  /* istanbul ignore if */
   if (!where) {
     return;
   }
@@ -110,9 +123,11 @@ class Warner extends EventEmitter {
   check(client, setting) {
     _.forEach(setting, (opts, measurement) => {
       _.forEach(opts, (option) => {
+        /* istanbul ignore if */
         if (option.time && !isValidTime(option.time)) {
           return;
         }
+        /* istanbul ignore if */
         if (option.day && !isValidDay(option.day)) {
           return;
         }
@@ -124,14 +139,16 @@ class Warner extends EventEmitter {
         reader.set('format', 'json');
         const ql = reader.toSelect();
         reader.then((data) => {
+          debug('ql:%s, result:%j', ql, data);
           _.forEach(data[measurement], (item) => {
-            const context = _.extend({
-              valid: true,
-            }, item);
             const key = option.check.split(' ')[0];
-            const script = new vm.Script(`valid = ${option.check}`);
-            script.runInNewContext(context);
-            if (!context.valid) {
+            const script = new vm.Script(`matched = ${option.check}`);
+            const context = vm.createContext(_.extend({
+              matched: false,
+            }, item));
+            script.runInContext(context);
+            debug('context:%j', context);
+            if (context.matched) {
               this.emit('warn', {
                 measurement,
                 ql,
@@ -141,8 +158,9 @@ class Warner extends EventEmitter {
             }
           });
         }).catch((err) => {
+          /* istanbul ignore next */
           if (this.listenerCount('error')) {
-            this.emiter('error', err);
+            this.emit('error', err);
           }
         });
       });
@@ -154,13 +172,14 @@ class Warner extends EventEmitter {
       _.forEach(this.config, (item, database) => {
         const options = _.extend({
           database,
-        }, _.pick(item, ['protocol', 'host', 'port']));
+        }, _.pick(item, ['protocol', 'host', 'port', 'user', 'pass']));
         const url = getUrl(options);
         const client = new Influx(url);
         this.check(client, item.measurement);
       });
     };
     p.then(run);
+    /* istanbul ignore next */
     return setInterval(() => {
       p.then(run);
     }, interval).unref();
