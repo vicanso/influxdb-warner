@@ -1,7 +1,7 @@
 {
   "name": "influxdb-warner",
   "description": "Create warn event from influxdb",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "author": "Tree Xie <vicansocanbico@gmail.com>",
   "keywords": [
     "influx",
@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "debug": "^2.6.0",
-    "influxdb-nodejs": "^2.4.3",
+    "influxdb-nodejs": "^2.4.4",
     "lodash": "^4.17.4",
     "moment": "^2.17.1",
     "yaml": "^0.3.0"

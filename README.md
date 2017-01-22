@@ -24,6 +24,7 @@ warner.on('warn', (data) => {
 ```
 
 ```yaml
+# the influxdb database
 warner:
   # the inflxudb host
   host: "127.0.0.1"
