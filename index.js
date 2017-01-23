@@ -1,3 +1,4 @@
+const Promise = require('bluebird');
 const moment = require('moment');
 const yaml = require('yaml');
 const EventEmitter = require('events');
@@ -6,6 +7,8 @@ const Influx = require('influxdb-nodejs');
 const vm = require('vm');
 const pkg = require('./package');
 const debug = require('debug')(pkg.name);
+
+const defaultChecker = () => Promise.resolve();
 
 /**
  * getUrl - Get the influxdb connect url
@@ -17,8 +20,8 @@ function getUrl(opt) {
   const port = opt.port || 8086;
   let auth = '';
   /* istanbul ignore if */
-  if (opt.user && opt.pass) {
-    auth = `${opt.user}:${opt.pass}@`;
+  if (opt.user && opt.password) {
+    auth = `${opt.user}:${opt.password}@`;
   }
   return `${protocol}://${auth}${opt.host}:${port}/${opt.database}`;
 }
@@ -108,9 +111,10 @@ function addWhere(reader, where) {
   }
   const arr = _.isArray(where) ? where : [where];
   _.forEach(arr, (item) => {
+    const reg = /^\d+(\.\d+)?$/;
     const tmpArr = item.split(/\s+/);
     const v = tmpArr[2];
-    const value = _.isNumber(v) ? parseFloat(v) : v;
+    const value = reg.test(v) ? parseFloat(v) : v;
     reader.where(tmpArr[0], value, tmpArr[1]);
   });
 }
@@ -121,53 +125,66 @@ class Warner extends EventEmitter {
     this.config = yaml.eval(data);
   }
   check(client, setting) {
+    const options = [];
     _.forEach(setting, (opts, measurement) => {
       _.forEach(opts, (option) => {
-        /* istanbul ignore if */
-        if (option.time && !isValidTime(option.time)) {
-          return;
-        }
-        /* istanbul ignore if */
-        if (option.day && !isValidDay(option.day)) {
-          return;
-        }
-        const reader = client.query(measurement);
-        reader.set(_.pick(option, 'start end'.split(' ')));
-        addFunction(reader, option.func);
-        addGroup(reader, option.group);
-        addWhere(reader, option.where);
-        reader.set('format', 'json');
-        const ql = reader.toSelect();
-        reader.then((data) => {
-          debug('ql:%s, result:%j', ql, data);
-          _.forEach(data[measurement], (item) => {
-            const key = option.check.split(' ')[0];
-            const script = new vm.Script(`matched = ${option.check}`);
-            const context = vm.createContext(_.extend({
-              matched: false,
-            }, item));
-            script.runInContext(context);
-            debug('context:%j', context);
-            if (context.matched) {
-              this.emit('warn', {
-                measurement,
-                ql,
-                text: option.text,
-                value: item[key],
-              });
-            }
-          });
-        }).catch((err) => {
-          /* istanbul ignore next */
-          if (this.listenerCount('error')) {
-            this.emit('error', err);
-          }
-        });
+        const item = _.extend({
+          measurement,
+        }, option);
+        options.push(item);
       });
     });
+    const checker = (option) => {
+      const measurement = option.measurement;
+      if (option.pass) {
+        return Promise.resolve();
+      }
+      /* istanbul ignore if */
+      if (option.time && !isValidTime(option.time)) {
+        return Promise.resolve();
+      }
+      /* istanbul ignore if */
+      if (option.day && !isValidDay(option.day)) {
+        return Promise.resolve();
+      }
+      const reader = client.query(measurement);
+      reader.set(_.pick(option, 'start end'.split(' ')));
+      addFunction(reader, option.func);
+      addGroup(reader, option.group);
+      addWhere(reader, option.where);
+      reader.set('format', 'json');
+      const ql = reader.toSelect();
+      return reader.then((data) => {
+        debug('ql:%s, result:%j', ql, data);
+        _.forEach(data[measurement], (item) => {
+          const arr = _.isArray(option.check) ? option.check : [option.check];
+          const checkList = _.map(arr, str => `(${str})`);
+          const script = new vm.Script(`matched = ${checkList.join(' || ')}`);
+          const context = vm.createContext(_.extend({
+            matched: false,
+          }, item));
+          script.runInContext(context);
+          debug('context:%j', context);
+          if (context.matched) {
+            this.emit('warn', _.extend({
+              measurement,
+              ql,
+              text: option.text,
+            }, item));
+          }
+        });
+      }).catch((err) => {
+        /* istanbul ignore next */
+        if (this.listenerCount('error')) {
+          this.emit('error', err);
+        }
+      });
+    };
+    return Promise.map(options, checker, {
+      concurrency: 10,
+    });
   }
-  start(interval, promise) {
-    const p = promise || Promise.resolve();
+  start(interval, beforeCheck = defaultChecker) {
     const run = () => {
       _.forEach(this.config, (item, database) => {
         const options = _.extend({
@@ -175,13 +192,14 @@ class Warner extends EventEmitter {
         }, _.pick(item, ['protocol', 'host', 'port', 'user', 'pass']));
         const url = getUrl(options);
         const client = new Influx(url);
+        client.timeout = 3000;
         this.check(client, item.measurement);
       });
     };
-    p.then(run);
+    beforeCheck().then(run);
     /* istanbul ignore next */
     return setInterval(() => {
-      p.then(run);
+      beforeCheck().then(run);
     }, interval).unref();
   }
 }

@@ -1,6 +1,6 @@
 # influxdb-warner
 
-[![Build Status](https://travis-ci.org/vicanso/influxdb-nodejs.svg?branch=master)](https://travis-ci.org/vicanso/influxdb-warner)
+[![Build Status](https://travis-ci.org/vicanso/influxdb-warner.svg?branch=master)](https://travis-ci.org/vicanso/influxdb-warner)
 [![Coverage Status](https://img.shields.io/coveralls/vicanso/influxdb-warner/master.svg?style=flat)](https://coveralls.io/r/vicanso/influxdb-warner?branch=master)
 [![npm](http://img.shields.io/npm/v/influxdb-warner.svg?style=flat-square)](https://www.npmjs.org/package/influxdb-warner)
 [![Github Releases](https://img.shields.io/npm/dm/influxdb-warner.svg?style=flat-square)](https://github.com/vicanso/influxdb-warner)
@@ -15,6 +15,12 @@ npm install influxdb-warner
 
 ### API
 
+#### start
+
+- `interval`  Check interval
+
+- `beforeCheck` The function return promise for control check, if resolve, the check will be continued. Otherwise this time will be passed. [optional]
+
 ```js
 const Warner = require('influxdb-warner');
 const yamlConfig = require('fs').readFileSync('./config.yml', 'utf8');
@@ -23,9 +29,10 @@ warner.on('warn', (data) => {
   // { measurement: 'login',
   //   ql: 'select count("account") from "login" where "result" = \'fail\' group by "type"',
   //   text: 'The count of failed login(group by account\'s type) is abnormal',
-  //   value: 34 }
+  //   ... }
   // send email
 });
+warner.start(60 * 1000, () => Promise.resolve());
 ```
 
 ```yaml
@@ -40,10 +47,13 @@ warner:
   # the user for influxdb, [optional]
   # user: user
   # the password for influxdb, [optional]
-  # pass: pass
+  # password: password
   measurement:
     login:
       -
+        # pass the check
+        # [optional]
+        pass: false
         # day filter, Monday:1, ... Sunday:7
         # [optional]
         # eg: "1-7" means Monday to Sunday
@@ -65,7 +75,7 @@ warner:
         start: "-5m"
         # the ene time of influxdb query, default is now()
         # [optional]
-        end: "now()"
+        # end: "now()"
         # the influxdb function for data
         # [optional]
         func:
@@ -73,7 +83,7 @@ warner:
         # check for each series of the result,
         # if the check return true,
         # the warn event will be emited
-        check: count < 60
+        check: count < 100
       -
         day: ["1", "2", "3", "4", "5", "6", "7"]
         time: ["00:00-12:00", "12:00-24:00"]
@@ -90,5 +100,12 @@ warner:
           - result = fail
         func:
           - count(account)
-        check: count > 1
+        check:
+          - count > 1 && type === 'vip'
+          - count > 1 && type === 'normal'
+      -
+        day: "1-2"
+        text: The check is pass
+        pass: true
+        check: type === 'test'
 ```

@@ -6,7 +6,6 @@ const configFile = path.join(__dirname, '../example/config.yml');
 const Warner = require('..');
 const config = require('fs')
   .readFileSync(configFile, 'utf8');
-const yaml = require('yaml');
 
 function randomChar(length = 8) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('');
@@ -33,7 +32,8 @@ function randomWrite(client) {
 
 describe('influxdb-warner', () => {
   const warner = new Warner(config);
-  it('init', (done) => {
+  it('init', function(done) {
+    this.timeout(5000);
     const max = 100;
     const client = new Influx('http://127.0.0.1:8086/warner');
     client.dropDatabase()
@@ -60,7 +60,6 @@ describe('influxdb-warner', () => {
     let count = 0;
     warner.on('warn', (data) => {
       assert.equal(data.measurement, 'login');
-      assert(data.value);
       const qlIndex = _.indexOf([
         'select count("account") from "login" where "result" = \'success\' and time >= now() - 5m',
         'select count("account") from "login" where "result" = \'fail\'',
@@ -78,11 +77,11 @@ describe('influxdb-warner', () => {
         done();
       }
     }).on('error', done);
-    const delay = (ms) => {
+    const delay = (ms = 10) => {
       return new Promise((resolve) => {
         setTimeout(resolve, ms);
       });
     };
-    warner.start(10 * 1000, delay(10));
+    warner.start(10 * 1000, delay);
   });
 });

@@ -8,10 +8,13 @@ warner:
   # the user for influxdb, [optional]
   # user: user
   # the password for influxdb, [optional]
-  # pass: pass
+  # password: password
   measurement:
     login:
       -
+        # pass the check
+        # [optional]
+        pass: false
         # day filter, Monday:1, ... Sunday:7
         # [optional]
         # eg: "1-7" means Monday to Sunday
@@ -58,4 +61,11 @@ warner:
           - result = fail
         func:
           - count(account)
-        check: count > 1
+        check:
+          - count > 1 && type === 'vip'
+          - count > 1 && type === 'normal'
+      -
+        day: "1-2"
+        text: The check is pass
+        pass: true
+        check: type === 'test'
