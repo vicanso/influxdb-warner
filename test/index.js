@@ -32,6 +32,7 @@ function randomWrite(client) {
 
 describe('influxdb-warner', () => {
   const warner = new Warner(config);
+  warner.timeout(3000);
   it('init', function(done) {
     this.timeout(5000);
     const max = 100;

@@ -109,3 +109,16 @@ warner:
         pass: true
         check: type === 'test'
 ```
+
+### timeout
+
+- `ms` the timeout value
+
+Set the query timeout
+
+```js
+const Warner = require('influxdb-warner');
+const yamlConfig = require('fs').readFileSync('./config.yml', 'utf8');
+const warner = new Warner(yamlConfig);
+warner.timeout(5000);
+```

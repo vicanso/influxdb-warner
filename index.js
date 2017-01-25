@@ -120,9 +120,13 @@ function addWhere(reader, where) {
 }
 
 class Warner extends EventEmitter {
-  constructor(data) {
+  constructor(data, options) {
     super();
     this.config = yaml.eval(data);
+    this.options = options || {};
+  }
+  timeout(ms) {
+    this.options.timeout = ms;
   }
   check(client, setting) {
     const options = [];
@@ -174,6 +178,8 @@ class Warner extends EventEmitter {
           }
         });
       }).catch((err) => {
+        /* eslint no-param-reassign:0 */
+        err.ql = ql;
         /* istanbul ignore next */
         if (this.listenerCount('error')) {
           this.emit('error', err);
@@ -192,14 +198,20 @@ class Warner extends EventEmitter {
         }, _.pick(item, ['protocol', 'host', 'port', 'user', 'pass']));
         const url = getUrl(options);
         const client = new Influx(url);
-        client.timeout = 3000;
+        if (this.options.timeout) {
+          client.timeout = this.options.timeout;
+        }
         this.check(client, item.measurement);
       });
     };
-    beforeCheck().then(run);
+    /* eslint no-console:0 */
+    beforeCheck().then(run)
+      .catch(() => console.info('This time the check will be pass'));
     /* istanbul ignore next */
     return setInterval(() => {
-      beforeCheck().then(run);
+      /* eslint no-console:0 */
+      beforeCheck().then(run)
+        .catch(() => console.info('This time the check will be pass'));
     }, interval).unref();
   }
 }
