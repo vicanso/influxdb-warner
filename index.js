@@ -1,6 +1,6 @@
 const Promise = require('bluebird');
 const moment = require('moment');
-const yaml = require('yaml');
+const yaml = require('js-yaml');
 const EventEmitter = require('events');
 const _ = require('lodash');
 const Influx = require('influxdb-nodejs');
@@ -122,7 +122,7 @@ function addWhere(reader, where) {
 class Warner extends EventEmitter {
   constructor(data, options) {
     super();
-    this.config = yaml.eval(data);
+    this.config = _.isObject(data) ? data : yaml.safeLoad(data);
     this.options = options || {};
   }
   timeout(ms) {
